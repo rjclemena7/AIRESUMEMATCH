@@ -16,7 +16,8 @@ const ResumeTailorInputSchema = z.object({
   jobDescription: z
     .string()
     .describe('The full text of the job description.'),
-  resumeText: z.string().describe('The text of the resume to tailor.'),
+  resumeText: z.string().optional().describe('The text of the resume to tailor.'),
+  resumeFileUri: z.string().optional().describe("A resume file, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."),
 });
 export type ResumeTailorInput = z.infer<typeof ResumeTailorInputSchema>;
 
@@ -39,7 +40,12 @@ const prompt = ai.definePrompt({
 
 Job Description: {{{jobDescription}}}
 
+{{#if resumeText}}
 Resume Text: {{{resumeText}}}
+{{else}}
+The user has uploaded their resume as a file. Analyze the content of this file as the resume.
+Resume File: {{media url=resumeFileUri}}
+{{/if}}
 
 Please provide tailored resume bullet points that highlight the candidate's qualifications for the job.  Focus on quantifiable achievements and use keywords from the job description.
 `,

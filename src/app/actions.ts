@@ -7,9 +7,16 @@ import { careerPath, type CareerPathOutput } from '@/ai/flows/career-path';
 import { z } from 'zod';
 
 const ActionSchema = z.object({
-  resume: z.string().min(50, { message: 'Resume must be at least 50 characters.' }),
+  resume: z.string(),
   jobDescription: z.string().min(50, { message: 'Job description must be at least 50 characters.' }),
-});
+  resumeFileUri: z.string().optional(),
+}).refine(
+    (data) => (data.resume && data.resume.length >= 50) || (data.resumeFileUri && data.resumeFileUri.length > 0),
+    {
+        message: 'Resume must be at least 50 characters, or a file must be uploaded.',
+        path: ['resume'],
+    }
+);
 
 export async function handleResumeTailor(
   prevState: { data: ResumeTailorOutput | null; error: string | null },
@@ -18,6 +25,7 @@ export async function handleResumeTailor(
   const validatedFields = ActionSchema.safeParse({
     resume: formData.get('resume'),
     jobDescription: formData.get('jobDescription'),
+    resumeFileUri: formData.get('resumeFileUri'),
   });
 
   if (!validatedFields.success) {
@@ -28,6 +36,7 @@ export async function handleResumeTailor(
   try {
     const result = await resumeTailor({
       resumeText: validatedFields.data.resume,
+      resumeFileUri: validatedFields.data.resumeFileUri,
       jobDescription: validatedFields.data.jobDescription,
     });
     return { data: result, error: null };
@@ -44,6 +53,7 @@ export async function handleJobMatch(
   const validatedFields = ActionSchema.safeParse({
     resume: formData.get('resume'),
     jobDescription: formData.get('jobDescription'),
+    resumeFileUri: formData.get('resumeFileUri'),
   });
 
   if (!validatedFields.success) {
@@ -54,6 +64,7 @@ export async function handleJobMatch(
   try {
     const result = await jobMatcher({
       resumeText: validatedFields.data.resume,
+      resumeFileUri: validatedFields.data.resumeFileUri,
       jobBoardText: validatedFields.data.jobDescription,
     });
     return { data: result, error: null };
@@ -70,6 +81,7 @@ export async function handleSkillsGap(
   const validatedFields = ActionSchema.safeParse({
     resume: formData.get('resume'),
     jobDescription: formData.get('jobDescription'),
+    resumeFileUri: formData.get('resumeFileUri'),
   });
 
   if (!validatedFields.success) {
@@ -80,6 +92,7 @@ export async function handleSkillsGap(
   try {
     const result = await skillsGap({
       resumeText: validatedFields.data.resume,
+      resumeFileUri: validatedFields.data.resumeFileUri,
       jobDescription: validatedFields.data.jobDescription,
     });
     return { data: result, error: null };
@@ -96,6 +109,7 @@ export async function handleCareerPath(
   const validatedFields = ActionSchema.safeParse({
     resume: formData.get('resume'),
     jobDescription: formData.get('jobDescription'),
+    resumeFileUri: formData.get('resumeFileUri'),
   });
 
   if (!validatedFields.success) {
@@ -106,6 +120,7 @@ export async function handleCareerPath(
   try {
     const result = await careerPath({
       resumeText: validatedFields.data.resume,
+      resumeFileUri: validatedFields.data.resumeFileUri,
       jobDescription: validatedFields.data.jobDescription,
     });
     return { data: result, error: null };

@@ -5,6 +5,7 @@ import React, { useState, useTransition, useEffect, useRef, useActionState } fro
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +15,7 @@ import type { JobMatcherOutput } from '@/ai/flows/job-matcher';
 import type { ResumeTailorOutput } from '@/ai/flows/resume-tailor';
 import type { SkillsGapOutput } from '@/ai/flows/skills-gap';
 import type { CareerPathOutput } from '@/ai/flows/career-path';
-import { Sparkles, Target, Lightbulb, GraduationCap, Briefcase, FileText, Bot } from 'lucide-react';
+import { Sparkles, Target, Lightbulb, GraduationCap, Briefcase, FileText, Bot, X } from 'lucide-react';
 
 const CareerCompassLogo = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -37,6 +38,8 @@ export default function CareerCompassPage() {
     const { toast } = useToast();
     const [resume, setResume] = useState('');
     const [jobDescription, setJobDescription] = useState('');
+    const [resumeFileUri, setResumeFileUri] = useState<string | null>(null);
+    const [resumeFileName, setResumeFileName] = useState<string | null>(null);
 
     const [tailorState, tailorAction] = useActionState(handleResumeTailor, { data: null, error: null });
     const [matchState, matchAction] = useActionState(handleJobMatch, { data: null, error: null });
@@ -59,6 +62,29 @@ export default function CareerCompassPage() {
         });
     }, [tailorState, matchState, skillsState, pathState, toast]);
 
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const dataUri = e.target?.result as string;
+                setResumeFileUri(dataUri);
+                setResumeFileName(file.name);
+                setResume(''); // Clear the textarea when a file is uploaded
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const clearResumeFile = () => {
+        setResumeFileUri(null);
+        setResumeFileName(null);
+        const fileInput = document.getElementById('resume-file-input') as HTMLInputElement;
+        if (fileInput) {
+            fileInput.value = '';
+        }
+    };
+
     const handleAction = (action: (formData: FormData) => void, startTransition: React.TransitionStartFunction) => {
         if (!formRef.current) return;
         startTransition(() => {
@@ -80,20 +106,51 @@ export default function CareerCompassPage() {
 
             <main className="flex-1 container mx-auto p-4 md:p-6">
                 <form ref={formRef} className="grid md:grid-cols-2 gap-6">
+                    <input type="hidden" name="resumeFileUri" value={resumeFileUri || ''} />
                     {/* Left Column: Inputs */}
                     <div className="flex flex-col gap-6">
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2"><FileText /> Your Resume</CardTitle>
-                                <CardDescription>Paste your resume content below. The more detailed, the better the AI can assist you.</CardDescription>
+                                <CardDescription>Paste your resume content below or upload a file. The AI will examine the content.</CardDescription>
                             </CardHeader>
-                            <CardContent>
+                            <CardContent className="space-y-4">
+                                <Input
+                                    id="resume-file-input"
+                                    type="file"
+                                    name="resumeFile"
+                                    onChange={handleFileChange}
+                                    className="text-sm"
+                                    accept=".pdf,.doc,.docx,.txt"
+                                />
+
+                                {resumeFileName && (
+                                    <div className="flex items-center justify-between p-2 bg-secondary rounded-md text-sm">
+                                        <span className="truncate">{resumeFileName}</span>
+                                        <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={clearResumeFile}>
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                )}
+
+                                <div className="relative flex py-1 items-center">
+                                    <div className="flex-grow border-t border-muted-foreground/20"></div>
+                                    <span className="flex-shrink mx-4 text-xs text-muted-foreground">OR</span>
+                                    <div className="flex-grow border-t border-muted-foreground/20"></div>
+                                </div>
+
                                 <Textarea
                                     name="resume"
                                     placeholder="Paste your full resume here..."
-                                    className="h-80 resize-none"
+                                    className="h-60 resize-none"
                                     value={resume}
-                                    onChange={(e) => setResume(e.target.value)}
+                                    onChange={(e) => {
+                                        setResume(e.target.value);
+                                        if (resumeFileName) {
+                                           clearResumeFile();
+                                        }
+                                    }}
+                                    disabled={!!resumeFileUri}
                                 />
                             </CardContent>
                         </Card>
@@ -150,7 +207,7 @@ export default function CareerCompassPage() {
                                         )}
                                     </CardContent>
                                     <div className="p-6 pt-0">
-                                        <Button type="button" onClick={() => handleAction(tailorAction, startTailorTransition)} disabled={isTailorPending || !resume || !jobDescription} className="w-full">
+                                        <Button type="button" onClick={() => handleAction(tailorAction, startTailorTransition)} disabled={isTailorPending || !(resume || resumeFileUri) || !jobDescription} className="w-full">
                                             <Sparkles className="mr-2 h-4 w-4"/> {isTailorPending ? "Tailoring..." : "Tailor My Resume"}
                                         </Button>
                                     </div>
@@ -192,7 +249,7 @@ export default function CareerCompassPage() {
                                         )}
                                     </CardContent>
                                     <div className="p-6 pt-0">
-                                        <Button type="button" onClick={() => handleAction(matchAction, startMatchTransition)} disabled={isMatchPending || !resume || !jobDescription} className="w-full">
+                                        <Button type="button" onClick={() => handleAction(matchAction, startMatchTransition)} disabled={isMatchPending || !(resume || resumeFileUri) || !jobDescription} className="w-full">
                                             <Target className="mr-2 h-4 w-4"/> {isMatchPending ? "Analyzing..." : "Check Job Match"}
                                         </Button>
                                     </div>
@@ -243,7 +300,7 @@ export default function CareerCompassPage() {
                                         )}
                                     </CardContent>
                                     <div className="p-6 pt-0">
-                                        <Button type="button" onClick={() => handleAction(skillsAction, startSkillsTransition)} disabled={isSkillsPending || !resume || !jobDescription} className="w-full">
+                                        <Button type="button" onClick={() => handleAction(skillsAction, startSkillsTransition)} disabled={isSkillsPending || !(resume || resumeFileUri) || !jobDescription} className="w-full">
                                             <Lightbulb className="mr-2 h-4 w-4"/> {isSkillsPending ? "Analyzing..." : "Analyze Skills Gap"}
                                         </Button>
                                     </div>
@@ -294,7 +351,7 @@ export default function CareerCompassPage() {
                                         )}
                                     </CardContent>
                                     <div className="p-6 pt-0">
-                                         <Button type="button" onClick={() => handleAction(pathAction, startPathTransition)} disabled={isPathPending || !resume || !jobDescription} className="w-full">
+                                         <Button type="button" onClick={() => handleAction(pathAction, startPathTransition)} disabled={isPathPending || !(resume || resumeFileUri) || !jobDescription} className="w-full">
                                             <GraduationCap className="mr-2 h-4 w-4"/> {isPathPending ? "Recommending..." : "Recommend Career Path"}
                                         </Button>
                                     </div>

@@ -11,7 +11,8 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const CareerPathInputSchema = z.object({
-  resumeText: z.string().describe("The text content of the user's resume."),
+  resumeText: z.string().optional().describe("The text content of the user's resume."),
+  resumeFileUri: z.string().optional().describe("A resume file, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."),
   jobDescription: z.string().describe('The text from a job description that represents the target role.'),
 });
 export type CareerPathInput = z.infer<typeof CareerPathInputSchema>;
@@ -34,8 +35,13 @@ const prompt = ai.definePrompt({
 Suggest specific, in-demand certifications that would be valuable for this career trajectory.
 Also, suggest the most important technical or soft skills to learn to advance in this field.
 
+{{#if resumeText}}
 Resume:
 {{{resumeText}}}
+{{else}}
+The user has uploaded their resume as a file. Analyze the content of this file as the resume.
+Resume File: {{media url=resumeFileUri}}
+{{/if}}
 
 Job Description:
 {{{jobDescription}}}`,

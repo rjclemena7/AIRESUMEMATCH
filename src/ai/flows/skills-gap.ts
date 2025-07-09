@@ -11,7 +11,8 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const SkillsGapInputSchema = z.object({
-  resumeText: z.string().describe("The text content of the user's resume."),
+  resumeText: z.string().optional().describe("The text content of the user's resume."),
+  resumeFileUri: z.string().optional().describe("A resume file, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."),
   jobDescription: z.string().describe('The text from a job description to compare to the resume.'),
 });
 export type SkillsGapInput = z.infer<typeof SkillsGapInputSchema>;
@@ -36,8 +37,13 @@ Identify the key skills required by the job description that are NOT present in 
 Also, identify the key skills that ARE present in both the resume and the job description.
 Finally, provide concise, actionable advice on how to improve the resume's language to be more compatible with Applicant Tracking Systems (ATS), using examples based on the provided texts.
 
+{{#if resumeText}}
 Resume:
 {{{resumeText}}}
+{{else}}
+The user has uploaded their resume as a file. Analyze the content of this file as the resume.
+Resume File: {{media url=resumeFileUri}}
+{{/if}}
 
 Job Description:
 {{{jobDescription}}}`,
