@@ -2,6 +2,8 @@
 
 import { jobMatcher, type JobMatcherOutput } from '@/ai/flows/job-matcher';
 import { resumeTailor, type ResumeTailorOutput } from '@/ai/flows/resume-tailor';
+import { skillsGap, type SkillsGapOutput } from '@/ai/flows/skills-gap';
+import { careerPath, type CareerPathOutput } from '@/ai/flows/career-path';
 import { z } from 'zod';
 
 const ActionSchema = z.object({
@@ -58,5 +60,57 @@ export async function handleJobMatch(
   } catch(e) {
     const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
     return { data: null, error: `Failed to match job: ${errorMessage}` };
+  }
+}
+
+export async function handleSkillsGap(
+  prevState: { data: SkillsGapOutput | null; error: string | null },
+  formData: FormData
+): Promise<{ data: SkillsGapOutput | null; error: string | null }> {
+  const validatedFields = ActionSchema.safeParse({
+    resume: formData.get('resume'),
+    jobDescription: formData.get('jobDescription'),
+  });
+
+  if (!validatedFields.success) {
+    const firstError = validatedFields.error.errors[0].message;
+    return { data: null, error: firstError };
+  }
+  
+  try {
+    const result = await skillsGap({
+      resumeText: validatedFields.data.resume,
+      jobDescription: validatedFields.data.jobDescription,
+    });
+    return { data: result, error: null };
+  } catch(e) {
+    const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
+    return { data: null, error: `Failed to analyze skills gap: ${errorMessage}` };
+  }
+}
+
+export async function handleCareerPath(
+  prevState: { data: CareerPathOutput | null; error: string | null },
+  formData: FormData
+): Promise<{ data: CareerPathOutput | null; error: string | null }> {
+  const validatedFields = ActionSchema.safeParse({
+    resume: formData.get('resume'),
+    jobDescription: formData.get('jobDescription'),
+  });
+
+  if (!validatedFields.success) {
+    const firstError = validatedFields.error.errors[0].message;
+    return { data: null, error: firstError };
+  }
+  
+  try {
+    const result = await careerPath({
+      resumeText: validatedFields.data.resume,
+      jobDescription: validatedFields.data.jobDescription,
+    });
+    return { data: result, error: null };
+  } catch(e) {
+    const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
+    return { data: null, error: `Failed to get career path: ${errorMessage}` };
   }
 }

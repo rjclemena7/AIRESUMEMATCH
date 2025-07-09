@@ -9,10 +9,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { handleResumeTailor, handleJobMatch } from './actions';
+import { handleResumeTailor, handleJobMatch, handleSkillsGap, handleCareerPath } from './actions';
 import type { JobMatcherOutput } from '@/ai/flows/job-matcher';
 import type { ResumeTailorOutput } from '@/ai/flows/resume-tailor';
-import { Sparkles, Target, Lightbulb, GraduationCap, Briefcase, FileText, Bot, AlertCircle } from 'lucide-react';
+import type { SkillsGapOutput } from '@/ai/flows/skills-gap';
+import type { CareerPathOutput } from '@/ai/flows/career-path';
+import { Sparkles, Target, Lightbulb, GraduationCap, Briefcase, FileText, Bot } from 'lucide-react';
 
 const CareerCompassLogo = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -31,18 +33,6 @@ const CareerCompassLogo = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-
-function SubmitButton({ children, icon }: { children: React.ReactNode, icon: React.ReactNode }) {
-    // This hook is not available in this react version.
-    // const { pending } = useFormStatus();
-    return (
-        <Button type="submit" className="w-full" >
-            {icon}
-            {children}
-        </Button>
-    );
-}
-
 export default function CareerCompassPage() {
     const { toast } = useToast();
     const [resume, setResume] = useState('');
@@ -50,40 +40,32 @@ export default function CareerCompassPage() {
 
     const [tailorState, tailorAction] = useActionState(handleResumeTailor, { data: null, error: null });
     const [matchState, matchAction] = useActionState(handleJobMatch, { data: null, error: null });
-    
+    const [skillsState, skillsAction] = useActionState(handleSkillsGap, { data: null, error: null });
+    const [pathState, pathAction] = useActionState(handleCareerPath, { data: null, error: null });
+
     const [isTailorPending, startTailorTransition] = useTransition();
     const [isMatchPending, startMatchTransition] = useTransition();
+    const [isSkillsPending, startSkillsTransition] = useTransition();
+    const [isPathPending, startPathTransition] = useTransition();
     
     const formRef = useRef<HTMLFormElement>(null);
 
     useEffect(() => {
-        if (tailorState.error) {
-            toast({ variant: "destructive", title: "Error", description: tailorState.error });
-        }
-    }, [tailorState, toast]);
+        const states = [tailorState, matchState, skillsState, pathState];
+        states.forEach(state => {
+            if (state.error) {
+                toast({ variant: "destructive", title: "Error", description: state.error });
+            }
+        });
+    }, [tailorState, matchState, skillsState, pathState, toast]);
 
-    useEffect(() => {
-        if (matchState.error) {
-            toast({ variant: "destructive", title: "Error", description: matchState.error });
-        }
-    }, [matchState, toast]);
-
-    const handleTailorAction = () => {
+    const handleAction = (action: (formData: FormData) => void, startTransition: React.TransitionStartFunction) => {
         if (!formRef.current) return;
-        startTailorTransition(() => {
+        startTransition(() => {
             const formData = new FormData(formRef.current!);
-            tailorAction(formData);
+            action(formData);
         });
     };
-    
-    const handleMatchAction = () => {
-        if (!formRef.current) return;
-        startMatchTransition(() => {
-            const formData = new FormData(formRef.current!);
-            matchAction(formData);
-        });
-    };
-
 
     return (
         <div className="flex flex-col min-h-screen bg-background text-foreground">
@@ -168,7 +150,7 @@ export default function CareerCompassPage() {
                                         )}
                                     </CardContent>
                                     <div className="p-6 pt-0">
-                                        <Button type="button" onClick={handleTailorAction} disabled={isTailorPending || !resume || !jobDescription} className="w-full">
+                                        <Button type="button" onClick={() => handleAction(tailorAction, startTailorTransition)} disabled={isTailorPending || !resume || !jobDescription} className="w-full">
                                             <Sparkles className="mr-2 h-4 w-4"/> {isTailorPending ? "Tailoring..." : "Tailor My Resume"}
                                         </Button>
                                     </div>
@@ -210,7 +192,7 @@ export default function CareerCompassPage() {
                                         )}
                                     </CardContent>
                                     <div className="p-6 pt-0">
-                                        <Button type="button" onClick={handleMatchAction} disabled={isMatchPending || !resume || !jobDescription} className="w-full">
+                                        <Button type="button" onClick={() => handleAction(matchAction, startMatchTransition)} disabled={isMatchPending || !resume || !jobDescription} className="w-full">
                                             <Target className="mr-2 h-4 w-4"/> {isMatchPending ? "Analyzing..." : "Check Job Match"}
                                         </Button>
                                     </div>
@@ -222,20 +204,49 @@ export default function CareerCompassPage() {
                                         <CardTitle>Skills Gap Analysis</CardTitle>
                                         <CardDescription>Identify key skills you might be missing and get language suggestions.</CardDescription>
                                     </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <div className="p-4 border rounded-lg bg-secondary/50">
-                                            <h4 className="font-semibold mb-2">Potential Missing Skills</h4>
-                                            <ul className="list-disc list-inside space-y-1 text-sm">
-                                                <li>Cloud Technologies (AWS, Azure, GCP)</li>
-                                                <li>Project Management Software (Jira, Asana)</li>
-                                                <li>Data Visualization Tools (Tableau, PowerBI)</li>
-                                            </ul>
-                                        </div>
-                                        <div className="p-4 border rounded-lg bg-secondary/50">
-                                            <h4 className="font-semibold mb-2">ATS-Friendly Language Tips</h4>
-                                            <p className="text-sm">Instead of "helped with projects," try "Led cross-functional teams in the successful execution of 3 major projects, resulting in a 15% increase in efficiency." Use action verbs and quantifiable results.</p>
-                                        </div>
+                                    <CardContent className="space-y-4 min-h-[20rem] flex flex-col justify-center">
+                                        {isSkillsPending && (
+                                            <div className="flex items-center justify-center p-8 space-x-2">
+                                                <Bot className="h-6 w-6 animate-spin" />
+                                                <p>Analyzing skills gap...</p>
+                                            </div>
+                                        )}
+                                        {!isSkillsPending && skillsState.data && (
+                                            <div className="space-y-4">
+                                                <div className="p-4 border rounded-lg bg-secondary/50">
+                                                    <h4 className="font-semibold mb-2">Matching Skills</h4>
+                                                    {skillsState.data.matchingSkills.length > 0 ? (
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {skillsState.data.matchingSkills.map((skill, i) => <Badge key={i} variant="secondary">{skill}</Badge>)}
+                                                        </div>
+                                                    ) : <p className="text-sm text-muted-foreground">No direct skill matches found.</p>}
+                                                </div>
+                                                <div className="p-4 border rounded-lg bg-secondary/50">
+                                                    <h4 className="font-semibold mb-2">Potential Missing Skills</h4>
+                                                    {skillsState.data.missingSkills.length > 0 ? (
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {skillsState.data.missingSkills.map((skill, i) => <Badge key={i} variant="destructive">{skill}</Badge>)}
+                                                        </div>
+                                                    ) : <p className="text-sm text-muted-foreground">Great news! No major skill gaps detected.</p>}
+                                                </div>
+                                                <div className="p-4 border rounded-lg bg-secondary/50">
+                                                    <h4 className="font-semibold mb-2">ATS-Friendly Language Tips</h4>
+                                                    <p className="text-sm whitespace-pre-wrap">{skillsState.data.atsSuggestions}</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {!isSkillsPending && !skillsState.data && (
+                                            <div className="text-center text-muted-foreground p-8">
+                                                <Lightbulb className="mx-auto h-12 w-12 mb-4" />
+                                                <p>Your skills gap analysis will appear here.</p>
+                                            </div>
+                                        )}
                                     </CardContent>
+                                    <div className="p-6 pt-0">
+                                        <Button type="button" onClick={() => handleAction(skillsAction, startSkillsTransition)} disabled={isSkillsPending || !resume || !jobDescription} className="w-full">
+                                            <Lightbulb className="mr-2 h-4 w-4"/> {isSkillsPending ? "Analyzing..." : "Analyze Skills Gap"}
+                                        </Button>
+                                    </div>
                                 </Card>
                             </TabsContent>
                             <TabsContent value="path">
@@ -244,33 +255,49 @@ export default function CareerCompassPage() {
                                         <CardTitle>Career Path Recommendations</CardTitle>
                                         <CardDescription>Explore skills and certifications to advance your career, based on market trends.</CardDescription>
                                     </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <div className="flex items-start gap-4 p-4 border rounded-lg">
-                                            <GraduationCap className="h-8 w-8 text-primary mt-1" />
-                                            <div>
-                                                <h4 className="font-semibold">In-Demand Certifications</h4>
-                                                <p className="text-sm text-muted-foreground">Boost your profile with these trending certifications.</p>
-                                                <div className="flex flex-wrap gap-2 mt-2">
-                                                    <Badge variant="secondary">Certified ScrumMaster (CSM)</Badge>
-                                                    <Badge variant="secondary">Google Analytics IQ</Badge>
-                                                    <Badge variant="secondary">AWS Certified Solutions Architect</Badge>
+                                    <CardContent className="space-y-4 min-h-[20rem] flex flex-col justify-center">
+                                        {isPathPending && (
+                                            <div className="flex items-center justify-center p-8 space-x-2">
+                                                <Bot className="h-6 w-6 animate-spin" />
+                                                <p>Generating career path...</p>
+                                            </div>
+                                        )}
+                                        {!isPathPending && pathState.data && (
+                                             <div className="space-y-4">
+                                                <div className="flex items-start gap-4 p-4 border rounded-lg">
+                                                    <GraduationCap className="h-8 w-8 text-primary mt-1" />
+                                                    <div>
+                                                        <h4 className="font-semibold">In-Demand Certifications</h4>
+                                                        <p className="text-sm text-muted-foreground">Boost your profile with these AI-suggested certifications.</p>
+                                                        <div className="flex flex-wrap gap-2 mt-2">
+                                                            {pathState.data.suggestedCertifications.map((cert, i) => <Badge key={i} variant="secondary">{cert}</Badge>)}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-start gap-4 p-4 border rounded-lg">
+                                                    <Lightbulb className="h-8 w-8 text-primary mt-1" />
+                                                    <div>
+                                                        <h4 className="font-semibold">Top Skills to Learn</h4>
+                                                        <p className="text-sm text-muted-foreground">Stay competitive by acquiring these AI-recommended skills.</p>
+                                                         <div className="flex flex-wrap gap-2 mt-2">
+                                                            {pathState.data.suggestedSkills.map((skill, i) => <Badge key={i} variant="secondary">{skill}</Badge>)}
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                        <div className="flex items-start gap-4 p-4 border rounded-lg">
-                                            <Lightbulb className="h-8 w-8 text-primary mt-1" />
-                                            <div>
-                                                <h4 className="font-semibold">Top Skills to Learn in 2024</h4>
-                                                <p className="text-sm text-muted-foreground">Stay competitive by acquiring these skills.</p>
-                                                 <div className="flex flex-wrap gap-2 mt-2">
-                                                    <Badge variant="secondary">AI/Machine Learning</Badge>
-                                                    <Badge variant="secondary">Cybersecurity</Badge>
-                                                    <Badge variant="secondary">UI/UX Design</Badge>
-                                                    <Badge variant="secondary">Data Science</Badge>
-                                                </div>
+                                        )}
+                                        {!isPathPending && !pathState.data && (
+                                            <div className="text-center text-muted-foreground p-8">
+                                                <GraduationCap className="mx-auto h-12 w-12 mb-4" />
+                                                <p>Your career path recommendations will appear here.</p>
                                             </div>
-                                        </div>
+                                        )}
                                     </CardContent>
+                                    <div className="p-6 pt-0">
+                                         <Button type="button" onClick={() => handleAction(pathAction, startPathTransition)} disabled={isPathPending || !resume || !jobDescription} className="w-full">
+                                            <GraduationCap className="mr-2 h-4 w-4"/> {isPathPending ? "Recommending..." : "Recommend Career Path"}
+                                        </Button>
+                                    </div>
                                 </Card>
                             </TabsContent>
                         </Tabs>
