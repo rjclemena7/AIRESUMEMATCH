@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useTransition, useEffect, useRef } from 'react';
-import { useFormState } from 'react-dom';
+import React, { useState, useTransition, useEffect, useRef, useActionState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -48,8 +47,8 @@ export default function CareerCompassPage() {
     const [resume, setResume] = useState('');
     const [jobDescription, setJobDescription] = useState('');
 
-    const [tailorState, tailorAction] = useFormState(handleResumeTailor, { data: null, error: null });
-    const [matchState, matchAction] = useFormState(handleJobMatch, { data: null, error: null });
+    const [tailorState, tailorAction] = useActionState(handleResumeTailor, { data: null, error: null });
+    const [matchState, matchAction] = useActionState(handleJobMatch, { data: null, error: null });
     
     const [isTailorPending, startTailorTransition] = useTransition();
     const [isMatchPending, startMatchTransition] = useTransition();
