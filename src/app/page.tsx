@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useTransition, useEffect, useRef, useActionState } from 'react';
@@ -67,21 +68,22 @@ export default function CareerCompassPage() {
         }
     }, [matchState, toast]);
 
-    const handleTailorSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
+    const handleTailorAction = () => {
+        if (!formRef.current) return;
         startTailorTransition(() => {
-            const formData = new FormData(e.currentTarget);
+            const formData = new FormData(formRef.current!);
             tailorAction(formData);
         });
     };
     
-    const handleMatchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
+    const handleMatchAction = () => {
+        if (!formRef.current) return;
         startMatchTransition(() => {
-            const formData = new FormData(e.currentTarget);
+            const formData = new FormData(formRef.current!);
             matchAction(formData);
         });
     };
+
 
     return (
         <div className="flex flex-col min-h-screen bg-background text-foreground">
@@ -141,85 +143,77 @@ export default function CareerCompassPage() {
                             </TabsList>
                             <TabsContent value="tailor" asChild>
                                 <Card className="mt-2">
-                                    <form onSubmit={handleTailorSubmit}>
-                                        <input type="hidden" name="resume" value={resume} />
-                                        <input type="hidden" name="jobDescription" value={jobDescription} />
-                                        <CardHeader>
-                                            <CardTitle>AI Resume Tailor</CardTitle>
-                                            <CardDescription>Get AI-powered suggestions to align your resume with the job description.</CardDescription>
-                                        </CardHeader>
-                                        <CardContent className="space-y-4">
-                                            {isTailorPending && (
-                                                <div className="flex items-center justify-center p-8 space-x-2">
-                                                    <Bot className="h-6 w-6 animate-bounce" />
-                                                    <p>Tailoring your resume...</p>
-                                                </div>
-                                            )}
-                                            {!isTailorPending && tailorState.data && (
-                                                <div className="p-4 bg-secondary/50 rounded-lg border">
-                                                    <h4 className="font-semibold mb-2">Tailored Bullet Points:</h4>
-                                                    <p className="whitespace-pre-wrap text-sm">{tailorState.data.tailoredBulletPoints}</p>
-                                                </div>
-                                            )}
-                                            {!isTailorPending && !tailorState.data && (
-                                                 <div className="text-center text-muted-foreground p-8">
-                                                    <Sparkles className="mx-auto h-12 w-12 mb-4" />
-                                                    <p>Your tailored resume points will appear here.</p>
-                                                </div>
-                                            )}
-                                        </CardContent>
-                                        <div className="p-6 pt-0">
-                                            <Button type="submit" disabled={isTailorPending || !resume || !jobDescription} className="w-full">
-                                                <Sparkles className="mr-2 h-4 w-4"/> {isTailorPending ? "Tailoring..." : "Tailor My Resume"}
-                                            </Button>
-                                        </div>
-                                    </form>
+                                    <CardHeader>
+                                        <CardTitle>AI Resume Tailor</CardTitle>
+                                        <CardDescription>Get AI-powered suggestions to align your resume with the job description.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        {isTailorPending && (
+                                            <div className="flex items-center justify-center p-8 space-x-2">
+                                                <Bot className="h-6 w-6 animate-bounce" />
+                                                <p>Tailoring your resume...</p>
+                                            </div>
+                                        )}
+                                        {!isTailorPending && tailorState.data && (
+                                            <div className="p-4 bg-secondary/50 rounded-lg border">
+                                                <h4 className="font-semibold mb-2">Tailored Bullet Points:</h4>
+                                                <p className="whitespace-pre-wrap text-sm">{tailorState.data.tailoredBulletPoints}</p>
+                                            </div>
+                                        )}
+                                        {!isTailorPending && !tailorState.data && (
+                                             <div className="text-center text-muted-foreground p-8">
+                                                <Sparkles className="mx-auto h-12 w-12 mb-4" />
+                                                <p>Your tailored resume points will appear here.</p>
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                    <div className="p-6 pt-0">
+                                        <Button type="button" onClick={handleTailorAction} disabled={isTailorPending || !resume || !jobDescription} className="w-full">
+                                            <Sparkles className="mr-2 h-4 w-4"/> {isTailorPending ? "Tailoring..." : "Tailor My Resume"}
+                                        </Button>
+                                    </div>
                                 </Card>
                             </TabsContent>
                             <TabsContent value="match" asChild>
                                 <Card className="mt-2">
-                                    <form onSubmit={handleMatchSubmit}>
-                                        <input type="hidden" name="resume" value={resume} />
-                                        <input type="hidden" name="jobDescription" value={jobDescription} />
-                                        <CardHeader>
-                                            <CardTitle>Job Matching Engine</CardTitle>
-                                            <CardDescription>See how well your resume matches the job requirements and get feedback.</CardDescription>
-                                        </CardHeader>
-                                        <CardContent className="space-y-4">
-                                             {isMatchPending && (
-                                                <div className="flex items-center justify-center p-8 space-x-2">
-                                                    <Bot className="h-6 w-6 animate-spin" />
-                                                    <p>Analyzing job match...</p>
-                                                </div>
-                                            )}
-                                            {!isMatchPending && matchState.data && (
-                                                <div className="space-y-4">
-                                                    <div>
-                                                        <div className="flex justify-between mb-1">
-                                                            <h4 className="font-semibold">Match Score</h4>
-                                                            <span className="font-bold text-primary">{matchState.data.jobMatchScore}%</span>
-                                                        </div>
-                                                        <Progress value={matchState.data.jobMatchScore} />
+                                    <CardHeader>
+                                        <CardTitle>Job Matching Engine</CardTitle>
+                                        <CardDescription>See how well your resume matches the job requirements and get feedback.</CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                         {isMatchPending && (
+                                            <div className="flex items-center justify-center p-8 space-x-2">
+                                                <Bot className="h-6 w-6 animate-spin" />
+                                                <p>Analyzing job match...</p>
+                                            </div>
+                                        )}
+                                        {!isMatchPending && matchState.data && (
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <div className="flex justify-between mb-1">
+                                                        <h4 className="font-semibold">Match Score</h4>
+                                                        <span className="font-bold text-primary">{matchState.data.jobMatchScore}%</span>
                                                     </div>
-                                                    <div className="p-4 bg-secondary/50 rounded-lg border">
-                                                        <h4 className="font-semibold mb-2">AI Feedback:</h4>
-                                                        <p className="text-sm">{matchState.data.feedback}</p>
-                                                    </div>
+                                                    <Progress value={matchState.data.jobMatchScore} />
                                                 </div>
-                                            )}
-                                            {!isMatchPending && !matchState.data && (
-                                                <div className="text-center text-muted-foreground p-8">
-                                                    <Target className="mx-auto h-12 w-12 mb-4" />
-                                                    <p>Your job match score and feedback will appear here.</p>
+                                                <div className="p-4 bg-secondary/50 rounded-lg border">
+                                                    <h4 className="font-semibold mb-2">AI Feedback:</h4>
+                                                    <p className="text-sm">{matchState.data.feedback}</p>
                                                 </div>
-                                            )}
-                                        </CardContent>
-                                        <div className="p-6 pt-0">
-                                            <Button type="submit" disabled={isMatchPending || !resume || !jobDescription} className="w-full">
-                                                <Target className="mr-2 h-4 w-4"/> {isMatchPending ? "Analyzing..." : "Check Job Match"}
-                                            </Button>
-                                        </div>
-                                    </form>
+                                            </div>
+                                        )}
+                                        {!isMatchPending && !matchState.data && (
+                                            <div className="text-center text-muted-foreground p-8">
+                                                <Target className="mx-auto h-12 w-12 mb-4" />
+                                                <p>Your job match score and feedback will appear here.</p>
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                    <div className="p-6 pt-0">
+                                        <Button type="button" onClick={handleMatchAction} disabled={isMatchPending || !resume || !jobDescription} className="w-full">
+                                            <Target className="mr-2 h-4 w-4"/> {isMatchPending ? "Analyzing..." : "Check Job Match"}
+                                        </Button>
+                                    </div>
                                 </Card>
                             </TabsContent>
                              <TabsContent value="skills">
