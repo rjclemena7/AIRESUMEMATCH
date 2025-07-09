@@ -23,7 +23,7 @@ export async function handleResumeTailor(
   formData: FormData
 ): Promise<{ data: ResumeTailorOutput | null; error: string | null }> {
   const validatedFields = ActionSchema.safeParse({
-    resume: formData.get('resume'),
+    resume: formData.get('resume') ?? '',
     jobDescription: formData.get('jobDescription'),
     resumeFileUri: formData.get('resumeFileUri'),
   });
@@ -51,7 +51,7 @@ export async function handleJobMatch(
   formData: FormData
 ): Promise<{ data: JobMatcherOutput | null; error: string | null }> {
   const validatedFields = ActionSchema.safeParse({
-    resume: formData.get('resume'),
+    resume: formData.get('resume') ?? '',
     jobDescription: formData.get('jobDescription'),
     resumeFileUri: formData.get('resumeFileUri'),
   });
@@ -79,7 +79,7 @@ export async function handleSkillsGap(
   formData: FormData
 ): Promise<{ data: SkillsGapOutput | null; error: string | null }> {
   const validatedFields = ActionSchema.safeParse({
-    resume: formData.get('resume'),
+    resume: formData.get('resume') ?? '',
     jobDescription: formData.get('jobDescription'),
     resumeFileUri: formData.get('resumeFileUri'),
   });
@@ -107,7 +107,7 @@ export async function handleCareerPath(
   formData: FormData
 ): Promise<{ data: CareerPathOutput | null; error: string | null }> {
   const validatedFields = ActionSchema.safeParse({
-    resume: formData.get('resume'),
+    resume: formData.get('resume') ?? '',
     jobDescription: formData.get('jobDescription'),
     resumeFileUri: formData.get('resumeFileUri'),
   });
