@@ -1,5 +1,3 @@
-# Firebase Studio
+# AI RESUME MATCHER
 
-This is a NextJS starter in Firebase Studio.
-
-To get started, take a look at src/app/page.tsx.
+Aligns resume with job description, as well as recommend job matches, skills gap, and career path through artificial intelligence.
