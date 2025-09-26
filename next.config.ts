@@ -18,6 +18,14 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // Exclude server-only modules from client-side bundles
+      config.externals.push('@opentelemetry/exporter-jaeger');
+      config.externals.push('handlebars');
+    }
+    return config;
+  }
 };
 
 export default nextConfig;
