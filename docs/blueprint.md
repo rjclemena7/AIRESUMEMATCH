@@ -16,4 +16,4 @@
 - Body and headline font: 'Inter' (sans-serif) provides a modern and neutral appearance.
 - Use minimalist icons to represent various job roles and skills.
 - Employ a clean, card-based layout for displaying job recommendations and career advice.
-- Subtle transitions to provide feedback and highlight new content.te
+- Subtle transitions to provide feedback and highlight new content.
